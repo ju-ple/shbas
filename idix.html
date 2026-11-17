@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 정원 가꾸기</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  }
+
+  body {
+    background-color: #1e272e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 12px;
+  }
+
+  /* 9:16 세로형 모바일 앱 비율 컨테이너 */
+  .app-shell {
+    width: 100%;
+    max-width: 412px;
+    aspect-ratio: 9 / 16;
+    max-height: 92vh;
+    background-color: #f4fbf6;
+    border-radius: 32px;
+    border: 5px solid #ffffff;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 공통 상단 바 */
+  .top-header {
+    padding: 16px 18px 13px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e1f0e5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .top-header h1 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1b4332;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-badges {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+
+  .wind-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background-color: #e8f5e9;
+    color: #2d6a4f;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid #c8e6c9;
+  }
+
+  /* 화면 전환 뷰 컨테이너 */
+  .view-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  /* ---------------- 1. 메인 화면 ---------------- */
+  .balance-card {
+    margin: 12px 16px 10px;
+    padding: 15px 18px;
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    color: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(45, 106, 79, 0.25);
+  }
+
+  .balance-label {
+    font-size: 0.78rem;
+    opacity: 0.9;
+    margin-bottom: 3px;
+  }
+
+  .balance-amount {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 9px;
+  }
+
+  .plant-counts {
+    display: flex;
+    gap: 10px;
+    font-size: 0.76rem;
+    background: rgba(255, 255, 255, 0.16);
+    padding: 6px 12px;
+    border-radius: 12px;
+    justify-content: space-around;
+  }
+
+  /* ---------------- 정원 배경 및 날씨 테마 ---------------- */
+  .mini-garden-wrapper {
+    flex: 1;
+    margin: 0 16px 10px;
+    border-radius: 20px;
+    border: 2px solid #d8f3dc;
+    position: relative;
+    overflow: hidden;
+    min-height: 160px;
+    transition: background 0.5s ease;
+  }
+
+  .full-garden-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.5s ease;
+  }
+
+  /* 날씨 1: 맑음 (Sunny) */
+  .weather-sunny.mini-garden-wrapper {
+    background: linear-gradient(180deg, #dff9fb 0%, #f1f8e9 45%, #b7e4c7 45%, #74c69d 100%);
+  }
+  .weather-sunny.full-garden-area {
+    background: linear-gradient(180deg, #d8f3f8 0%, #eef9f0 32%, #95d5b2 32%, #52b788 100%);
+  }
+
+  /* 날씨 2: 흐림 (Cloudy) */
+  .weather-cloudy.mini-garden-wrapper {
+    background: linear-gradient(180deg, #b2bec3 0%, #dfe6e9 45%, #95b8a4 45%, #638c76 100%);
+  }
+  .weather-cloudy.full-garden-area {
+    background: linear-gradient(180deg, #95a5a6 0%, #d5dbdb 32%, #82a893 32%, #4e7861 100%);
+  }
+
+  /* 날씨 3: 비 (Rainy) */
+  .weather-rainy.mini-garden-wrapper {
+    background: linear-gradient(180deg, #4b6584 0%, #778ca3 45%, #557a67 45%, #385948 100%);
+  }
+  .weather-rainy.full-garden-area {
+    background: linear-gradient(180deg, #3c5470 0%, #687d94 32%, #4a6e5c 32%, #2f4d3e 100%);
+  }
+
+  /* 날씨 4: 눈 (Snowy) */
+  .weather-snowy.mini-garden-wrapper {
+    background: linear-gradient(180deg, #74b9ff 0%, #dfe6e9 45%, #edf6f9 45%, #d8e2dc 100%);
+  }
+  .weather-snowy.full-garden-area {
+    background: linear-gradient(180deg, #63a4e6 0%, #e1e8ed 32%, #f0f7fa 32%, #cfdce3 100%);
+  }
+
+  /* 날씨 5: 밤 (Night) */
+  .weather-night.mini-garden-wrapper {
+    background: linear-gradient(180deg, #0c1445 0%, #1e2a78 45%, #244738 45%, #162e24 100%);
+  }
+  .weather-night.full-garden-area {
+    background: linear-gradient(180deg, #090e33 0%, #192466 32%, #1d3b2e 32%, #11261d 100%);
+  }
+
+  /* 날씨 파티클(비, 눈, 햇살, 달/별) 레이어 */
+  .weather-fx-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 4;
+  }
+
+  .sky-celestial {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 1.7rem;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+    animation: floatCelestial 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes floatCelestial {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-4px) scale(1.06); }
+  }
+
+  .rain-drop {
+    position: absolute;
+    top: -20px;
+    width: 2px;
+    height: 14px;
+    background: rgba(200, 230, 255, 0.75);
+    border-radius: 2px;
+    animation: rainFall linear infinite;
+  }
+
+  @keyframes rainFall {
+    0% { transform: translate(0, 0) rotate(var(--rain-tilt, 10deg)); opacity: 0.85; }
+    100% { transform: translate(var(--rain-drift, 25px), 480px) rotate(var(--rain-tilt, 10deg)); opacity: 0.2; }
+  }
+
+  .snow-flake {
+    position: absolute;
+    top: -15px;
+    color: #ffffff;
+    font-size: 0.75rem;
+    opacity: 0.9;
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+    animation: snowFall linear infinite;
+  }
+
+  @keyframes snowFall {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(var(--snow-drift, 30px), 480px) rotate(360deg); }
+  }
+
+  .star-dot {
+    position: absolute;
+    background: #fff9c4;
+    border-radius: 50%;
+    animation: twinkle 1.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes twinkle {
+    0% { opacity: 0.25; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.2); }
+  }
+
+  .garden-label-tag {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #1b4332;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    z-index: 6;
+  }
+
+  /* 입출금 입력 영역 */
+  .control-panel {
+    background-color: #ffffff;
+    padding: 13px 16px;
+    border-top: 1px solid #e1f0e5;
+  }
+
+  .quick-amounts {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .quick-btn {
+    flex: 1;
+    padding: 6px 0;
+    font-size: 0.74rem;
+    font-weight: 600;
+    background-color: #f1f8f4;
+    color: #2d6a4f;
+    border: 1px solid #c8e6c9;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .quick-btn:hover {
+    background-color: #d8f3dc;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #d8f3dc;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1b4332;
+    outline: none;
+  }
+
+  .input-row input:focus {
+    border-color: #40916c;
+  }
+
+  .action-btns {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-save {
+    flex: 1;
+    padding: 10px;
+    background-color: #2d6a4f;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-save:hover {
+    background-color: #1b4332;
+  }
+
+  .btn-withdraw {
+    flex: 1;
+    padding: 10px;
+    background-color: #e9f5ee;
+    color: #2d6a4f;
+    border: 1px solid #b7e4c7;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-withdraw:hover {
+    background-color: #d8f3dc;
+  }
+
+  .status-msg {
+    font-size: 0.75rem;
+    min-height: 17px;
+    margin-top: 6px;
+    text-align: center;
+    font-weight: 600;
+    color: #2d6a4f;
+  }
+
+  .status-msg.error {
+    color: #d90429;
+  }
+
+  /* ---------------- 2. 전체 정원 화면 ---------------- */
+  .garden-overlay-info {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(6px);
+    padding: 11px 14px;
+    border-radius: 16px;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .garden-overlay-info .money-txt {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: #1b4332;
+  }
+
+  .garden-overlay-info .sub-txt {
+    font-size: 0.73rem;
+    color: #40916c;
+    margin-top: 2px;
+  }
+
+  /* ---------------- 3. 설정 화면 ---------------- */
+  .settings-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .setting-card {
+    background: #ffffff;
+    border: 1px solid #d8f3dc;
+    border-radius: 16px;
+    padding: 13px 14px;
+  }
+
+  .setting-card h3 {
+    font-size: 0.88rem;
+    color: #1b4332;
+    margin-bottom: 4px;
+  }
+
+  .setting-card p {
+    font-size: 0.74rem;
+    color: #52796f;
+    margin-bottom: 9px;
+    line-height: 1.35;
+  }
+
+  .wind-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .wind-option-btn {
+    flex: 1;
+    min-width: 56px;
+    padding: 8px 4px;
+    border-radius: 10px;
+    border: 1.5px solid #d8f3dc;
+    background: #f8fcf9;
+    color: #2d6a4f;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .wind-option-btn.selected {
+    background: #2d6a4f;
+    color: #ffffff;
+    border-color: #2d6a4f;
+  }
+
+  .btn-reset {
+    width: 100%;
+    padding: 10px;
+    border-radius: 11px;
+    border: 1px solid #ffccd5;
+    background: #fff0f3;
+    color: #c9184a;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-back-origin {
+    margin-top: 4px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    border: none;
+    background: #2d6a4f;
+    color: #ffffff;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ---------------- 식물 요소 & 애니메이션 ---------------- */
+  .plant-item {
+    position: absolute;
+    transform-origin: bottom center;
+    user-select: none;
+    pointer-events: none;
+    animation-name: windSway;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.15));
+    transition: transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
+  }
+
+  @keyframes windSway {
+    0% {
+      transform: translateX(-50%) rotate(var(--start-deg));
+    }
+    100% {
+      transform: translateX(-50%) rotate(var(--end-deg));
+    }
+  }
+
+  /* 출금 시 불타며 사라지는 애니메이션 */
+  .plant-item.burning {
+    animation: burnAndDisappear 0.7s forwards ease-in-out !important;
+  }
+
+  @keyframes burnAndDisappear {
+    0% {
+      transform: translateX(-50%) scale(1) rotate(0deg);
+      filter: drop-shadow(0 0 12px #ff4757) brightness(1.5) sepia(1);
+    }
+    40% {
+      transform: translateX(-50%) scale(1.15) rotate(8deg);
+      filter: drop-shadow(0 0 20px #ff6b81) brightness(2) saturate(3) hue-rotate(-20deg);
+    }
+    80% {
+      transform: translateX(-50%) scale(0.8) translateY(-10px) rotate(-15deg);
+      filter: drop-shadow(0 0 10px #e84118) brightness(0.6) grayscale(0.5);
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateX(-50%) scale(0.2) translateY(-25px) rotate(25deg);
+      filter: brightness(0.2);
+      opacity: 0;
+    }
+  }
+
+  /* ---------------- 하단 한 줄 네비게이션 바 ---------------- */
+  .bottom-nav {
+    display: flex;
+    flex-direction: row;
+    background-color: #ffffff;
+    border-top: 1px solid #d8f3dc;
+    padding: 10px 12px 14px;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .nav-btn {
+    flex: 1;
+    padding: 11px 4px;
+    border: none;
+    border-radius: 14px;
+    background-color: #f1f8f4;
+    color: #2d6a4f;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+
+  .nav-btn.active {
+    background-color: #2d6a4f;
+    color: #ffffff;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- 상단 헤더 -->
+  <header class="top-header">
+    <h1>🌱 나의 정원 가꾸기</h1>
+    <div class="status-badges">
+      <div class="wind-badge" id="weatherBadge">☀️ 맑음</div>
+      <div class="wind-badge" id="windBadge">동풍 · 보통</div>
+    </div>
+  </header>
+
+  <div class="view-container">
+    <!-- 1. 메인 화면 -->
+    <section id="mainScreen" class="screen active">
+      <div class="balance-card">
+        <div class="balance-label">현재 저축한 총 금액</div>
+        <div class="balance-amount" id="mainBalance">0원</div>
+        <div class="plant-counts" id="plantSummary">
+          <span>🌳 나무 0그루</span>
+          <span>🌷 꽃 0송이</span>
+          <span>🌿 잔디 0포기</span>
+        </div>
+      </div>
+
+      <!-- 메인 화면 실시간 정원 -->
+      <div class="mini-garden-wrapper weather-sunny" id="mainGardenCanvas">
+        <div class="garden-label-tag">실시간 내 정원</div>
+        <div class="weather-fx-layer" id="mainWeatherFx"></div>
+      </div>
+
+      <!-- 저축 / 출금 입력 패널 -->
+      <div class="control-panel">
+        <div class="quick-amounts">
+          <button type="button" class="quick-btn" onclick="addQuickAmount(1000)">+1천원(잔디)</button>
+          <button type="button" class="quick-btn" onclick="addQuickAmount(10000)">+1만원(꽃)</button>
+          <button type="button" class="quick-btn" onclick="addQuickAmount(50000)">+5만원(나무)</button>
+        </div>
+        <div class="input-row">
+          <input type="number" id="moneyInput" placeholder="금액 입력 (예: 10000)" min="1" step="100">
+        </div>
+        <div class="action-btns">
+          <button type="button" class="btn-save" onclick="handleDeposit()">저축하기</button>
+          <button type="button" class="btn-withdraw" onclick="handleWithdraw()">출금하기</button>
+        </div>
+        <div class="status-msg" id="statusMessage">출금하면 초과된 식물이 불타오르며 사라져요!</div>
+      </div>
+    </section>
+
+    <!-- 2. 정원 화면 (전체 확대 뷰) -->
+    <section id="gardenScreen" class="screen">
+      <div class="full-garden-area weather-sunny" id="fullGardenCanvas">
+        <div class="weather-fx-layer" id="fullWeatherFx"></div>
+        <div class="garden-overlay-info">
+          <div>
+            <div class="money-txt" id="gardenBalance">총 저축액: 0원</div>
+            <div class="sub-txt" id="gardenDetailCount">나무 0 · 꽃 0 · 잔디 0</div>
+          </div>
+          <div style="font-size: 1.5rem;" id="gardenWeatherIcon">☀️</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 설정 화면 -->
+    <section id="settingsScreen" class="screen">
+      <div class="settings-body">
+        <div class="setting-card">
+          <h3>🌤️ 정원 날씨 설정</h3>
+          <p>정원의 날씨를 바꿀 수 있습니다. 비나 눈은 설정된 바람 방향에 맞춰 내립니다.</p>
+          <div class="wind-options" id="weatherGroup">
+            <button type="button" class="wind-option-btn selected" data-weather="sunny" onclick="setWeather('sunny')">☀️ 맑음</button>
+            <button type="button" class="wind-option-btn" data-weather="cloudy" onclick="setWeather('cloudy')">☁️ 흐림</button>
+            <button type="button" class="wind-option-btn" data-weather="rainy" onclick="setWeather('rainy')">🌧️ 비</button>
+            <button type="button" class="wind-option-btn" data-weather="snowy" onclick="setWeather('snowy')">❄️ 눈</button>
+            <button type="button" class="wind-option-btn" data-weather="night" onclick="setWeather('night')">🌙 밤</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <h3>🍃 기본 바람 방향 설정</h3>
+          <p>바람 방향에 따라 식물들이 기울어지고 흔들리는 방향이 달라집니다.</p>
+          <div class="wind-options" id="windDirGroup">
+            <button type="button" class="wind-option-btn" data-dir="west" onclick="setWindDirection('west')">⬅️ 서풍 (왼쪽)</button>
+            <button type="button" class="wind-option-btn selected" data-dir="east" onclick="setWindDirection('east')">➡️ 동풍 (오른쪽)</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <h3>💨 바람 세기 조절</h3>
+          <p>바람이 강할수록 식물들이 더 크게 흔들립니다.</p>
+          <div class="wind-options" id="windPowerGroup">
+            <button type="button" class="wind-option-btn" data-power="gentle" onclick="setWindPower('gentle')">산들바람</button>
+            <button type="button" class="wind-option-btn selected" data-power="normal" onclick="setWindPower('normal')">보통바람</button>
+            <button type="button" class="wind-option-btn" data-power="strong" onclick="setWindPower('strong')">강한바람</button>
+          </div>
+        </div>
+
+        <div class="setting-card">
+          <h3>🔄 정원 및 저축 초기화</h3>
+          <p>모든 저축 내역과 정원의 식물을 처음 상태로 되돌립니다.</p>
+          <button type="button" class="btn-reset" onclick="resetGardenData()">데이터 전체 초기화</button>
+        </div>
+
+        <button type="button" class="btn-back-origin" id="backOriginBtn" onclick="returnFromSettings()">
+          이전 화면으로 돌아가기
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 하단 한 줄 네비게이션 버튼 -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button type="button" class="nav-btn active" id="navMainBtn" onclick="navigateTo('main')">🏠 메인화면</button>
+    <button type="button" class="nav-btn" id="navGardenBtn" onclick="navigateTo('garden')">🌳 정원화면</button>
+    <button type="button" class="nav-btn" id="navSettingsBtn" onclick="navigateTo('settings')">⚙️ 설정</button>
+  </nav>
+</div>
+
+<script>
+  // 상태 관리 변수
+  let totalSavings = 0;
+  let currentScreen = 'main';
+  let previousScreenBeforeSettings = 'main';
+
+  // 바람 및 날씨 설정
+  let windDirection = 'east'; // 'east' | 'west'
+  let windPower = 'normal';   // 'gentle' | 'normal' | 'strong'
+  let currentWeather = 'sunny'; // 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'night'
+
+  // 식물 목록 데이터
+  let plantsData = [];
+
+  const flowerIcons = ['🌷', '🌻', '🌼', '🌸', '🌺'];
+  const treeIcons = ['🌳', '🌲'];
+  const grassIcons = ['🌿', '🌱', '🍀'];
+
+  function formatWon(num) {
+    return num.toLocaleString('ko-KR') + '원';
+  }
+
+  function showMessage(text, isError = false) {
+    const msgEl = document.getElementById('statusMessage');
+    msgEl.textContent = text;
+    if (isError) {
+      msgEl.classList.add('error');
+    } else {
+      msgEl.classList.remove('error');
+    }
+  }
+
+  function addQuickAmount(amount) {
+    const input = document.getElementById('moneyInput');
+    const currentVal = Number(input.value) || 0;
+    input.value = currentVal + amount;
+  }
+
+  // 저축 기능
+  function handleDeposit() {
+    const input = document.getElementById('moneyInput');
+    const rawVal = input.value.trim();
+    const amount = Number(rawVal);
+
+    if (!rawVal || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+      showMessage('⚠️ 1원 이상의 올바른 정수 금액을 입력해 주세요.', true);
+      return;
+    }
+
+    totalSavings += amount;
+    input.value = '';
+    syncPlantsWithBalance(false);
+    updateUI();
+    showMessage(`✅ ${formatWon(amount)} 저축 완료! 정원이 풍성해졌습니다.`);
+  }
+
+  // 출금 기능 (불타는 애니메이션 적용 후 제거)
+  function handleWithdraw() {
+    const input = document.getElementById('moneyInput');
+    const rawVal = input.value.trim();
+    const amount = Number(rawVal);
+
+    if (!rawVal || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+      showMessage('⚠️ 1원 이상의 올바른 출금 금액을 입력해 주세요.', true);
+      return;
+    }
+
+    if (amount > totalSavings) {
+      showMessage('⚠️ 잔액이 부족합니다. 현재 저축액 이하로 입력해 주세요.', true);
+      return;
+    }
+
+    totalSavings -= amount;
+    input.value = '';
+
+    syncPlantsWithBalance(true);
+    showMessage(`🔥 ${formatWon(amount)} 출금! 초과된 식물들이 불타며 사라집니다.`);
+  }
+
+  function syncPlantsWithBalance(isWithdraw) {
+    let remaining = totalSavings;
+    const targetTrees = Math.floor(remaining / 50000);
+    remaining %= 50000;
+
+    const targetFlowers = Math.floor(remaining / 10000);
+    remaining %= 10000;
+
+    const targetGrasses = Math.floor(remaining / 1000);
+
+    const maxRenderTrees = Math.min(targetTrees, 25);
+    const maxRenderFlowers = Math.min(targetFlowers, 35);
+    const maxRenderGrasses = Math.min(targetGrasses, 50);
+
+    adjustPlantType('tree', maxRenderTrees, isWithdraw);
+    adjustPlantType('flower', maxRenderFlowers, isWithdraw);
+    adjustPlantType('grass', maxRenderGrasses, isWithdraw);
+  }
+
+  function adjustPlantType(type, targetCount, isWithdraw) {
+    const currentOfType = plantsData.filter(p => p.type === type);
+    const diff = targetCount - currentOfType.length;
+
+    if (diff > 0) {
+      const iconPool = type === 'tree' ? treeIcons : (type === 'flower' ? flowerIcons : grassIcons);
+      for (let i = 0; i < diff; i++) {
+        const x = 8 + Math.random() * 84;
+        const y = 38 + Math.random() * 54;
+        const icon = iconPool[Math.floor(Math.random() * iconPool.length)];
+        plantsData.push({
+          id: Date.now() + Math.random(),
+          type: type,
+          icon: icon,
+          x: x,
+          y: y,
+          randomDuration: (1.8 + Math.random() * 2.2).toFixed(2),
+          randomDelay: (-Math.random() * 3).toFixed(2),
+          randomStrength: 0.65 + Math.random() * 0.75
+        });
+      }
+    } else if (diff < 0) {
+      let toRemove = Math.abs(diff);
+      if (isWithdraw) {
+        for (let i = 0; i < toRemove; i++) {
+          const typePlants = plantsData.filter(p => p.type === type);
+          if (typePlants.length === 0) break;
+          const targetPlant = typePlants[Math.floor(Math.random() * typePlants.length)];
+
+          const elMain = document.querySelector(`.plant-item[data-id="${targetPlant.id}"]`);
+          const elFull = document.querySelector(`.full-garden-area .plant-item[data-id="${targetPlant.id}"]`);
+
+          if (elMain) elMain.classList.add('burning');
+          if (elFull) elFull.classList.add('burning');
+
+          setTimeout(() => {
+            plantsData = plantsData.filter(p => p.id !== targetPlant.id);
+            updateUI();
+          }, 700);
+        }
+      } else {
+        for (let i = plantsData.length - 1; i >= 0 && toRemove > 0; i--) {
+          if (plantsData[i].type === type) {
+            plantsData.splice(i, 1);
+            toRemove--;
+          }
+        }
+      }
+    }
+    if (!isWithdraw) {
+      updateUI();
+    }
+  }
+
+  function getWindAngles(plant) {
+    let basePower = 6;
+    if (windPower === 'gentle') basePower = 3;
+    if (windPower === 'strong') basePower = 12;
+
+    let typeFactor = 1.0;
+    if (plant.type === 'grass') typeFactor = 1.25;
+    if (plant.type === 'flower') typeFactor = 1.0;
+    if (plant.type === 'tree') typeFactor = 0.65;
+
+    const dirSign = windDirection === 'east' ? 1 : -1;
+    const swingAmount = basePower * typeFactor * plant.randomStrength;
+
+    const minAngle = dirSign * (swingAmount * 0.25);
+    const maxAngle = dirSign * (swingAmount * 1.15);
+
+    return {
+      startDeg: minAngle.toFixed(1) + 'deg',
+      endDeg: maxAngle.toFixed(1) + 'deg'
+    };
+  }
+
+  // 날씨 배경 및 파티클(비, 눈, 별, 태양/구름) 렌더링
+  function renderWeatherEffects() {
+    const mainCanvas = document.getElementById('mainGardenCanvas');
+    const fullCanvas = document.getElementById('fullGardenCanvas');
+    const weatherClasses = ['weather-sunny', 'weather-cloudy', 'weather-rainy', 'weather-snowy', 'weather-night'];
+
+    [mainCanvas, fullCanvas].forEach(el => {
+      el.classList.remove(...weatherClasses);
+      el.classList.add('weather-' + currentWeather);
+    });
+
+    const dirSign = windDirection === 'east' ? 1 : -1;
+    const powerMultiplier = windPower === 'gentle' ? 0.5 : (windPower === 'strong' ? 1.8 : 1.0);
+
+    ['mainWeatherFx', 'fullWeatherFx'].forEach(fxId => {
+      const fxContainer = document.getElementById(fxId);
+      fxContainer.innerHTML = '';
+
+      if (currentWeather === 'sunny') {
+        const sun = document.createElement('div');
+        sun.className = 'sky-celestial';
+        sun.textContent = '☀️';
+        fxContainer.appendChild(sun);
+      } else if (currentWeather === 'cloudy') {
+        const cloud = document.createElement('div');
+        cloud.className = 'sky-celestial';
+        cloud.textContent = '☁️';
+        fxContainer.appendChild(cloud);
+      } else if (currentWeather === 'rainy') {
+        const dropCount = fxId === 'fullWeatherFx' ? 36 : 22;
+        const driftPx = dirSign * 35 * powerMultiplier;
+        const tiltDeg = -dirSign * 12 * powerMultiplier;
+
+        for (let i = 0; i < dropCount; i++) {
+          const drop = document.createElement('div');
+          drop.className = 'rain-drop';
+          drop.style.left = (Math.random() * 110 - 5) + '%';
+          drop.style.animationDuration = (0.55 + Math.random() * 0.45).toFixed(2) + 's';
+          drop.style.animationDelay = (-Math.random() * 1.5).toFixed(2) + 's';
+          drop.style.setProperty('--rain-drift', driftPx + 'px');
+          drop.style.setProperty('--rain-tilt', tiltDeg + 'deg');
+          fxContainer.appendChild(drop);
+        }
+      } else if (currentWeather === 'snowy') {
+        const flakeCount = fxId === 'fullWeatherFx' ? 28 : 18;
+        const driftPx = dirSign * 45 * powerMultiplier;
+
+        for (let i = 0; i < flakeCount; i++) {
+          const flake = document.createElement('div');
+          flake.className = 'snow-flake';
+          flake.textContent = '❄️';
+          flake.style.left = (Math.random() * 110 - 5) + '%';
+          flake.style.fontSize = (8 + Math.random() * 7) + 'px';
+          flake.style.animationDuration = (2.5 + Math.random() * 2.5).toFixed(2) + 's';
+          flake.style.animationDelay = (-Math.random() * 4).toFixed(2) + 's';
+          flake.style.setProperty('--snow-drift', driftPx + 'px');
+          fxContainer.appendChild(flake);
+        }
+      } else if (currentWeather === 'night') {
+        const moon = document.createElement('div');
+        moon.className = 'sky-celestial';
+        moon.textContent = '🌙';
+        fxContainer.appendChild(moon);
+
+        const starCount = fxId === 'fullWeatherFx' ? 20 : 12;
+        for (let i = 0; i < starCount; i++) {
+          const star = document.createElement('div');
+          star.className = 'star-dot';
+          const size = (2 + Math.random() * 2.5).toFixed(1) + 'px';
+          star.style.width = size;
+          star.style.height = size;
+          star.style.left = (5 + Math.random() * 90) + '%';
+          star.style.top = (5 + Math.random() * 28) + '%';
+          star.style.animationDelay = (-Math.random() * 2).toFixed(2) + 's';
+          fxContainer.appendChild(star);
+        }
+      }
+    });
+  }
+
+  function renderGarden(containerId, isFullView) {
+    const container = document.getElementById(containerId);
+    const oldPlants = container.querySelectorAll('.plant-item');
+    oldPlants.forEach(el => el.remove());
+
+    const sortedPlants = [...plantsData].sort((a, b) => a.y - b.y);
+
+    sortedPlants.forEach(plant => {
+      const el = document.createElement('div');
+      el.className = 'plant-item';
+      el.setAttribute('data-id', plant.id);
+      el.textContent = plant.icon;
+      el.style.left = plant.x + '%';
+      el.style.top = plant.y + '%';
+
+      const depthScale = 0.75 + ((plant.y - 38) / 54) * 0.45;
+      let baseSize = 18;
+      if (plant.type === 'grass') baseSize = isFullView ? 22 : 16;
+      if (plant.type === 'flower') baseSize = isFullView ? 28 : 21;
+      if (plant.type === 'tree') baseSize = isFullView ? 42 : 30;
+
+      el.style.fontSize = Math.round(baseSize * depthScale) + 'px';
+      el.style.zIndex = Math.floor(plant.y);
+
+      const angles = getWindAngles(plant);
+      el.style.setProperty('--start-deg', angles.startDeg);
+      el.style.setProperty('--end-deg', angles.endDeg);
+      el.style.animationDuration = plant.randomDuration + 's';
+      el.style.animationDelay = plant.randomDelay + 's';
+
+      container.appendChild(el);
+    });
+  }
+
+  function updateUI() {
+    const trees = Math.floor(totalSavings / 50000);
+    const flowers = Math.floor((totalSavings % 50000) / 10000);
+    const grasses = Math.floor((totalSavings % 10000) / 1000);
+
+    document.getElementById('mainBalance').textContent = formatWon(totalSavings);
+    document.getElementById('plantSummary').innerHTML = `
+      <span>🌳 나무 ${trees}그루</span>
+      <span>🌷 꽃 ${flowers}송이</span>
+      <span>🌿 잔디 ${grasses}포기</span>
+    `;
+
+    document.getElementById('gardenBalance').textContent = `총 저축액: ${formatWon(totalSavings)}`;
+    document.getElementById('gardenDetailCount').textContent = `🌳 나무 ${trees}그루 · 🌷 꽃 ${flowers}송이 · 🌿 잔디 ${grasses}포기`;
+
+    const weatherMap = {
+      sunny: { label: '☀️ 맑음', icon: '☀️' },
+      cloudy: { label: '☁️ 흐림', icon: '☁️' },
+      rainy: { label: '🌧️ 비', icon: '🌧️' },
+      snowy: { label: '❄️ 눈', icon: '❄️' },
+      night: { label: '🌙 밤', icon: '🌙' }
+    };
+    document.getElementById('weatherBadge').textContent = weatherMap[currentWeather].label;
+    document.getElementById('gardenWeatherIcon').textContent = weatherMap[currentWeather].icon;
+
+    const dirText = windDirection === 'east' ? '동풍' : '서풍';
+    const powerMap = { gentle: '약함', normal: '보통', strong: '강함' };
+    document.getElementById('windBadge').textContent = `${dirText} · ${powerMap[windPower]}`;
+
+    renderWeatherEffects();
+    renderGarden('mainGardenCanvas', false);
+    renderGarden('fullGardenCanvas', true);
+  }
+
+  function navigateTo(targetScreen) {
+    if (targetScreen === 'settings' && currentScreen !== 'settings') {
+      previousScreenBeforeSettings = currentScreen;
+      const originName = previousScreenBeforeSettings === 'garden' ? '정원화면' : '메인화면';
+      document.getElementById('backOriginBtn').textContent = `↩️ ${originName}으로 돌아가기`;
+    }
+
+    currentScreen = targetScreen;
+
+    document.querySelectorAll('.screen').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(targetScreen + 'Screen').classList.add('active');
+
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    if (targetScreen === 'main') document.getElementById('navMainBtn').classList.add('active');
+    if (targetScreen === 'garden') document.getElementById('navGardenBtn').classList.add('active');
+    if (targetScreen === 'settings') document.getElementById('navSettingsBtn').classList.add('active');
+
+    updateUI();
+  }
+
+  function returnFromSettings() {
+    navigateTo(previousScreenBeforeSettings);
+  }
+
+  // 날씨 변경 함수
+  function setWeather(weather) {
+    currentWeather = weather;
+    document.querySelectorAll('#weatherGroup .wind-option-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.weather === weather);
+    });
+    updateUI();
+  }
+
+  function setWindDirection(dir) {
+    windDirection = dir;
+    document.querySelectorAll('#windDirGroup .wind-option-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.dir === dir);
+    });
+    updateUI();
+  }
+
+  function setWindPower(power) {
+    windPower = power;
+    document.querySelectorAll('#windPowerGroup .wind-option-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.power === power);
+    });
+    updateUI();
+  }
+
+  function resetGardenData() {
+    totalSavings = 0;
+    plantsData = [];
+    updateUI();
+    showMessage('🌱 정원과 저축액이 초기화되었습니다.');
+    navigateTo('main');
+  }
+
+  document.getElementById('moneyInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      handleDeposit();
+    }
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
